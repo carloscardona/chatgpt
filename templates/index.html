@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Golf Swing Analysis</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Golf Swing Analyzer</h1>
+    <p>Submit a swing video URL to receive physics-aware insights and pro comparisons.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Analyze a Swing</h2>
+      <form id="analyze-form">
+        <label for="video_url">Video URL</label>
+        <input id="video_url" name="video_url" type="url" placeholder="https://example.com/swing.mp4" required />
+
+        <label for="perspective">Perspective (optional)</label>
+        <input id="perspective" name="perspective" type="text" placeholder="down-the-line" />
+
+        <label for="player_height_cm">Player Height (cm, optional)</label>
+        <input id="player_height_cm" name="player_height_cm" type="number" step="0.1" />
+
+        <label for="club_length_cm">Club Length (cm, optional)</label>
+        <input id="club_length_cm" name="club_length_cm" type="number" step="0.1" />
+
+        <button type="submit">Run Analysis</button>
+      </form>
+    </section>
+
+    <section class="card" id="results" hidden>
+      <h2>Results</h2>
+      <div id="summary"></div>
+      <div class="grid">
+        <div>
+          <h3>Segments</h3>
+          <ul id="segments"></ul>
+        </div>
+        <div>
+          <h3>Key Metrics</h3>
+          <ul id="metrics"></ul>
+        </div>
+        <div>
+          <h3>Coaching Cues</h3>
+          <ul id="cues"></ul>
+        </div>
+        <div>
+          <h3>Pro Comparisons</h3>
+          <ul id="comparisons"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="error" hidden>
+      <h2>Something went wrong</h2>
+      <p id="error-message"></p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('analyze-form');
+    const resultsSection = document.getElementById('results');
+    const errorSection = document.getElementById('error');
+    const summary = document.getElementById('summary');
+    const segments = document.getElementById('segments');
+    const metrics = document.getElementById('metrics');
+    const cues = document.getElementById('cues');
+    const comparisons = document.getElementById('comparisons');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      resultsSection.hidden = true;
+      errorSection.hidden = true;
+
+      const payload = {
+        video_url: form.video_url.value,
+        perspective: form.perspective.value || null,
+        player_height_cm: form.player_height_cm.value ? Number(form.player_height_cm.value) : null,
+        club_length_cm: form.club_length_cm.value ? Number(form.club_length_cm.value) : null,
+      };
+
+      try {
+        const response = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderResults(data);
+      } catch (err) {
+        errorMessage.textContent = err.message;
+        errorSection.hidden = false;
+      }
+    });
+
+    function renderResults(data) {
+      summary.innerHTML = `<p><strong>Video:</strong> <a href="${data.video_url}" target="_blank" rel="noopener">${data.video_url}</a></p>`;
+
+      segments.innerHTML = data.segments
+        .map(seg => `<li><strong>${seg.name}</strong>: ${seg.start_time_s.toFixed(1)}s – ${seg.end_time_s.toFixed(1)}s<br/><span>${seg.notes || ''}</span></li>`) 
+        .join('');
+
+      metrics.innerHTML = data.key_metrics
+        .map(metric => `<li><strong>${metric.name}</strong>: ${metric.value} ${metric.unit}<br/><span>${metric.interpretation || ''}</span></li>`) 
+        .join('');
+
+      cues.innerHTML = data.coaching_cues
+        .map(cue => `<li>${cue}</li>`)
+        .join('');
+
+      comparisons.innerHTML = data.pro_comparisons
+        .map(comp => `<li><strong>${comp.pro_name}</strong>: ${comp.summary}<br/><em>Strengths:</em> ${comp.strengths.join(', ')}<br/><em>Deltas:</em> ${comp.deltas.join(', ')}${comp.reference_video ? `<br/><a href="${comp.reference_video}" target="_blank" rel="noopener">Reference swing</a>` : ''}</li>`) 
+        .join('');
+
+      resultsSection.hidden = false;
+    }
+  </script>
+</body>
+</html>

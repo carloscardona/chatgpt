@@ -1,26 +1,54 @@
-"""Simple CLI application to add two numbers."""
+"""FastAPI application exposing golf swing analysis endpoints."""
 
-import argparse
+from __future__ import annotations
+
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+from app.schemas import AnalysisResponse, VideoInput
+from app.services import SwingAnalysisService
+
+app = FastAPI(
+    title="Golf Swing Analysis API",
+    description=(
+        "Upload swing footage, receive segmentation-aware analytics, physics-informed "
+        "metrics, and comparisons to professional golfers."
+    ),
+    version="0.1.0",
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for two numbers.
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def home(request: Request) -> HTMLResponse:
+    """Serve a minimal web UI for submitting swing analysis requests."""
 
-    Returns:
-        argparse.Namespace: Parsed arguments with num1 and num2.
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/health", tags=["system"])
+def health() -> dict[str, str]:
+    """Health probe endpoint."""
+
+    return {"status": "ok"}
+
+
+@app.post("/analyze", response_model=AnalysisResponse, tags=["analysis"])
+def analyze(video: VideoInput) -> AnalysisResponse:
+    """Trigger a swing analysis job.
+
+    The current implementation returns curated sample data while a full
+    computer-vision pipeline (segmentation, 3D pose, physics modeling)
+    is under construction.
     """
 
-    parser = argparse.ArgumentParser(description="Add two numbers together")
-    parser.add_argument("num1", type=float, help="First number")
-    parser.add_argument("num2", type=float, help="Second number")
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    result = args.num1 + args.num2
-    print(f"{args.num1} + {args.num2} = {result}")
+    return SwingAnalysisService.analyze(video)
 
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
