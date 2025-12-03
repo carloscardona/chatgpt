@@ -1,6 +1,6 @@
-# Golf Swing Analysis API
+# Golf Swing Analysis Web App
 
-A FastAPI-based service that accepts a swing video URL and returns segmentation-aware, physics-inspired analysis with suggested coaching cues and comparisons to professional golfers. The current implementation serves curated sample data while a full computer vision pipeline is being built.
+A FastAPI-based web experience that accepts a swing video URL and returns segmentation-aware, physics-inspired analysis with suggested coaching cues and comparisons to professional golfers. The current implementation serves curated sample data while a full computer vision pipeline is being built.
 
 ## Quickstart
 
@@ -14,12 +14,15 @@ A FastAPI-based service that accepts a swing video URL and returns segmentation-
    uvicorn main:app --reload
    ```
 
-3. **Check health**
+3. **Open the web UI**
+   - Navigate to [http://localhost:8000/](http://localhost:8000/) and submit a swing video URL. The page uses the same API that powers the backend.
+
+4. **Check health via API**
    ```bash
    curl http://localhost:8000/health
    ```
 
-4. **Request an analysis**
+5. **Request an analysis via API**
    ```bash
    curl -X POST http://localhost:8000/analyze \
      -H "Content-Type: application/json" \
